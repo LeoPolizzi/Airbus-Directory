@@ -1,0 +1,14 @@
+{
+    "annuaire": [
+        {
+            "nom": "Dupont",
+            "prenom": "Jean",
+            "taille": 180
+        },
+        {
+            "nom": "Durand",
+            "prenom": "Marie",
+            "taille": 165
+        }
+    ]
+}

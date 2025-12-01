@@ -1,0 +1,6 @@
+{
+	"directory_path": "annuaire.json",
+	"destination_ip": "127.0.0.1",
+	"port": 5005,
+	"interval": 1
+}
