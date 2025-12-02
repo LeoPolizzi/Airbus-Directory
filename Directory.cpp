@@ -100,6 +100,8 @@ void Directory::loadFromJSON(const std::string& filename) {
 	this->lastModifiedTime = std::filesystem::last_write_time(this->jsonFilename).time_since_epoch().count();
 }
 
+#ifdef _WIN32
+
 bool Directory::sendUDP(const std::string& ip, int port) const {
     std::ifstream file(this->jsonFilename);
     if (!file.is_open()) {
@@ -109,41 +111,25 @@ bool Directory::sendUDP(const std::string& ip, int port) const {
                       std::istreambuf_iterator<char>());
     file.close();
 
-#ifdef _WIN32
     WSADATA wsa;
     if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
         return false;
-#endif
 
-#ifdef _WIN32
     SOCKET sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (sock == INVALID_SOCKET) {
         WSACleanup();
         return false;
     }
-#else
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-        return false;
-    }
-#endif
 
     sockaddr_in addr {};
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
 
-#ifdef _WIN32
     if (inet_pton(AF_INET, ip.c_str(), &addr.sin_addr) <= 0) {
         closesocket(sock);
         WSACleanup();
         return false;
     }
-#else
-    if (inet_pton(AF_INET, ip.c_str(), &addr.sin_addr) <= 0) {
-        close(sock);
-        return false;
-    }
-#endif
 
     int sent = sendto(
         sock,
@@ -154,12 +140,48 @@ bool Directory::sendUDP(const std::string& ip, int port) const {
         sizeof(addr)
     );
 
-#ifdef _WIN32
     closesocket(sock);
     WSACleanup();
-#else
-    close(sock);
-#endif
 
     return (sent == (int)data.size());
 }
+
+#else
+
+bool Directory::sendUDP(const std::string& ip, int port) const {
+    std::ifstream file(this->jsonFilename);
+    if (!file.is_open()) {
+        return false;
+    }
+    std::string data((std::istreambuf_iterator<char>(file)),
+                      std::istreambuf_iterator<char>());
+    file.close();
+
+    int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0) {
+        return false;
+    }
+
+    sockaddr_in addr {};
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+
+    if (inet_pton(AF_INET, ip.c_str(), &addr.sin_addr) <= 0) {
+        close(sock);
+        return false;
+    }
+
+    int sent = sendto(
+        sock,
+        data.c_str(),
+        static_cast<int>(data.size()),
+        0,
+        reinterpret_cast<sockaddr*>(&addr),
+        sizeof(addr)
+    );
+
+    close(sock);
+    return (sent == (int)data.size());
+}
+
+#endif
