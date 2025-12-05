@@ -3,12 +3,31 @@
 
 std::atomic<bool> g_stop(false);
 
+void read_in(std::string& input) {
+    if (std::cin.peek() == '\n') {
+        std::cin.ignore(1);
+    }
+    std::getline(std::cin, input);
+}
+
+bool read_in(int64_t& input) {
+	if (std::cin >> input) {
+		std::cin.clear();
+		std::cin.ignore(10000, '\n');
+		return true;
+	} else {
+		std::cin.clear();
+		std::cin.ignore(10000, '\n');
+		return false;
+	}
+}
+
 void inputThread(Directory& directory) {
     std::string command;
     while (true) {
         try {
             std::cout << "Enter command (list (l), add (a), modify (m), remove (r), exit (e)): ";
-            std::cin >> command;
+			read_in(command);
 
             if (command == "list" || command == "l") {
                 directory.listPersons();
@@ -19,20 +38,16 @@ void inputThread(Directory& directory) {
                 int64_t height;
 
                 std::cout << "First Name: ";
-                std::cin >> firstName;
+				read_in(firstName);
 
                 std::cout << "Last Name: ";
-                std::cin >> lastName;
+                read_in(lastName);
 
-                while (true) {
-                    std::cout << "Height: ";
-                    if (std::cin >> height)
-                        break;
-
-                    std::cin.clear();
-                    std::cin.ignore(10000, '\n');
-                    std::cout << "Invalid height. Please enter a number.\n";
-                }
+				std::cout << "Height (in centimeters): ";
+				while (!read_in(height)) {
+					std::cout << "Invalid height. Please enter a number.\n";
+					std::cout << "Height (in centimeters): ";
+				}
 
                 Person person(firstName, lastName, height);
                 directory.addPerson(person);
@@ -47,19 +62,15 @@ void inputThread(Directory& directory) {
                 int64_t height;
 
                 std::cout << "First Name of person to modify: ";
-                std::cin >> firstName;
+				read_in(firstName);
 
                 std::cout << "Last Name of person to modify: ";
-                std::cin >> lastName;
+				read_in(lastName);
 
-                while (true) {
-                    std::cout << "New Height: ";
-                    if (std::cin >> height)
-                        break;
-
-                    std::cin.clear();
-                    std::cin.ignore(10000, '\n');
+				std::cout << "Height (in centimeters): ";
+                while (!read_in(height)) {
                     std::cout << "Invalid height. Please enter a number.\n";
+					std::cout << "Height (in centimeters): ";
                 }
 
                 Person updatedPerson(firstName, lastName, height);
@@ -74,10 +85,10 @@ void inputThread(Directory& directory) {
                 std::string firstName, lastName;
 
                 std::cout << "First Name of person to remove: ";
-                std::cin >> firstName;
+				read_in(firstName);
 
                 std::cout << "Last Name of person to remove: ";
-                std::cin >> lastName;
+				read_in(lastName);
 
                 directory.removePerson(firstName, lastName);
 
@@ -94,13 +105,9 @@ void inputThread(Directory& directory) {
             else {
                 std::cout << "Unknown command." << std::endl;
             }
-        }
-        catch (const std::exception& e) {
+        } catch (const std::exception& e) {
             std::cerr << "Error processing command: "
                       << e.what() << std::endl;
-
-            std::cin.clear();
-            std::cin.ignore(10000, '\n');
         }
     }
 }
