@@ -21,18 +21,23 @@ Directory& Directory::operator=(const Directory& other) {
 	return *this;
 }
 
-void Directory::listPersons() const {
+void Directory::listPersons() {
+	lockMutex();
 	for (const auto& person : this->entries) {
 		std::cout << person.getFirstName() << " " << person.getLastName() << ", Height: " << person.getHeight() << " cm" << std::endl;
 	}
+	unlockMutex();
 }
 
 void Directory::addPerson(const Person& person) {
+	lockMutex();
 	this->entries.push_back(person);
 	saveToJSON();
+	unlockMutex();
 }
 
 void Directory::modifyPerson(const std::string& firstName, const std::string& lastName, const Person& updatedPerson) {
+	lockMutex();
 	for (auto& person : this->entries) {
 		if (person.getFirstName() == firstName && person.getLastName() == lastName) {
 			person = updatedPerson;
@@ -40,22 +45,29 @@ void Directory::modifyPerson(const std::string& firstName, const std::string& la
 		}
 	}
 	saveToJSON();
+	unlockMutex();
 }
 
 void Directory::removePerson(const std::string& firstName, const std::string& lastName) {
+	lockMutex();
 	this->entries.erase(std::remove_if(this->entries.begin(), this->entries.end(),
 		[&](const Person& p) {
 			return p.getFirstName() == firstName && p.getLastName() == lastName;
 		}), this->entries.end());
-	saveToJSON();
+	try {
+		saveToJSON();
+	} catch (const std::exception& e) {
+		std::cerr << "Error saving to JSON after removal: " << e.what() << std::endl;
+	}
+	unlockMutex();
 }
 
 void Directory::lockMutex() {
-	this->lock.lock();
+	lock.lock();
 }
 
 void Directory::unlockMutex() {
-	this->lock.unlock();
+	lock.unlock();
 }
 
 bool Directory::hasExternalModification() const {
@@ -102,86 +114,34 @@ void Directory::loadFromJSON(const std::string& filename) {
 
 #ifdef _WIN32
 
-bool Directory::sendUDP(const std::string& ip, int port) const {
+void Directory::sendUDP(const std::string& ip, int port) const {
     std::ifstream file(this->jsonFilename);
     if (!file.is_open()) {
-        return false;
+		throw std::runtime_error("Could not open file: " + this->jsonFilename);
     }
     std::string data((std::istreambuf_iterator<char>(file)),
                       std::istreambuf_iterator<char>());
     file.close();
 
-    WSADATA wsa;
-    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
-        return false;
+	Socket sock(ip, port);
 
-    SOCKET sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (sock == INVALID_SOCKET) {
-        WSACleanup();
-        return false;
-    }
-
-    sockaddr_in addr {};
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(port);
-
-    if (inet_pton(AF_INET, ip.c_str(), &addr.sin_addr) <= 0) {
-        closesocket(sock);
-        WSACleanup();
-        return false;
-    }
-
-    int sent = sendto(
-        sock,
-        data.c_str(),
-        static_cast<int>(data.size()),
-        0,
-        reinterpret_cast<sockaddr*>(&addr),
-        sizeof(addr)
-    );
-
-    closesocket(sock);
-    WSACleanup();
-
-    return (sent == (int)data.size());
+	sock.send(data);
 }
 
 #else
 
-bool Directory::sendUDP(const std::string& ip, int port) const {
+void Directory::sendUDP(const std::string& ip, int port) const {
     std::ifstream file(this->jsonFilename);
     if (!file.is_open()) {
-        return false;
+		throw std::runtime_error("Could not open file: " + this->jsonFilename);
     }
     std::string data((std::istreambuf_iterator<char>(file)),
                       std::istreambuf_iterator<char>());
     file.close();
 
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-        return false;
-    }
+	Socket sock(ip, port);
 
-    sockaddr_in addr {};
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(port);
-
-    if (inet_pton(AF_INET, ip.c_str(), &addr.sin_addr) <= 0) {
-        close(sock);
-        return false;
-    }
-
-    int sent = sendto(
-        sock,
-        data.c_str(),
-        static_cast<int>(data.size()),
-        0,
-        reinterpret_cast<sockaddr*>(&addr),
-        sizeof(addr)
-    );
-
-    close(sock);
-    return (sent == (int)data.size());
+	sock.send(data);
 }
 
 #endif

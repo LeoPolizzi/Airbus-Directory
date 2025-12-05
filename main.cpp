@@ -4,66 +4,105 @@
 std::atomic<bool> g_stop(false);
 
 void inputThread(Directory& directory) {
-	std::string command;
-	while (true) {
-		try {
-			std::cout << "Enter command (list, add, modify, remove, exit): ";
-			std::cin >> command;
-			if (command == "list") {
-				directory.lockMutex();
-				directory.listPersons();
-				directory.unlockMutex();
-			} else
-			if (command == "add") {
-				std::string firstName, lastName;
-				int64_t height;
-				std::cout << "First Name: ";
-				std::cin >> firstName;
-				std::cout << "Last Name: ";
-				std::cin >> lastName;
-				std::cout << "Height: ";
-				std::cin >> height;
-				Person person(firstName, lastName, height);
-				directory.lockMutex();
-				directory.addPerson(person);
-				directory.unlockMutex();
-				std::cout << firstName << " " << lastName << " added. He's " << height << " centimeters tall." << std::endl;
-			} else if (command == "modify") {
-				std::string firstName, lastName;
-				int64_t height;
-				std::cout << "First Name of person to modify: ";
-				std::cin >> firstName;
-				std::cout << "Last Name of person to modify: ";
-				std::cin >> lastName;
-				std::cout << "New Height: ";
-				std::cin >> height;
-				Person updatedPerson(firstName, lastName, height);
-				directory.lockMutex();
-				directory.modifyPerson(firstName, lastName, updatedPerson);
-				directory.unlockMutex();
-				std::cout << "Height updated for " << firstName << " " << lastName << "." << " New height: " << height << "." << std::endl;
-			} else if (command == "remove") {
-				std::string firstName, lastName;
-				std::cout << "First Name of person to remove: ";
-				std::cin >> firstName;
-				std::cout << "Last Name of person to remove: ";
-				std::cin >> lastName;
-				directory.lockMutex();
-				directory.removePerson(firstName, lastName);
-				directory.unlockMutex();
-				std::cout << firstName << " " << lastName << " removed." << std::endl;
-			} else if (command == "exit") {
-				std::cout << "Exiting program." << std::endl;
-				g_stop = true;
-				break;
-			} else {
-				std::cout << "Unknown command." << std::endl;
-			}
-		} catch (const std::exception& e) {
-			std::cerr << "Error processing command: " << e.what() << std::endl;
-			directory.unlockMutex();
-		}
-	}
+    std::string command;
+    while (true) {
+        try {
+            std::cout << "Enter command (list (l), add (a), modify (m), remove (r), exit (e)): ";
+            std::cin >> command;
+
+            if (command == "list" || command == "l") {
+                directory.listPersons();
+            }
+
+            else if (command == "add" || command == "a") {
+                std::string firstName, lastName;
+                int64_t height;
+
+                std::cout << "First Name: ";
+                std::cin >> firstName;
+
+                std::cout << "Last Name: ";
+                std::cin >> lastName;
+
+                while (true) {
+                    std::cout << "Height: ";
+                    if (std::cin >> height)
+                        break;
+
+                    std::cin.clear();
+                    std::cin.ignore(10000, '\n');
+                    std::cout << "Invalid height. Please enter a number.\n";
+                }
+
+                Person person(firstName, lastName, height);
+                directory.addPerson(person);
+
+                std::cout << firstName << " " << lastName
+                          << " added. He's " << height
+                          << " centimeters tall." << std::endl;
+            }
+
+            else if (command == "modify" || command == "m") {
+                std::string firstName, lastName;
+                int64_t height;
+
+                std::cout << "First Name of person to modify: ";
+                std::cin >> firstName;
+
+                std::cout << "Last Name of person to modify: ";
+                std::cin >> lastName;
+
+                while (true) {
+                    std::cout << "New Height: ";
+                    if (std::cin >> height)
+                        break;
+
+                    std::cin.clear();
+                    std::cin.ignore(10000, '\n');
+                    std::cout << "Invalid height. Please enter a number.\n";
+                }
+
+                Person updatedPerson(firstName, lastName, height);
+                directory.modifyPerson(firstName, lastName, updatedPerson);
+
+                std::cout << "Height updated for "
+                          << firstName << " " << lastName
+                          << ". New height: " << height << "." << std::endl;
+            }
+
+            else if (command == "remove" || command == "r") {
+                std::string firstName, lastName;
+
+                std::cout << "First Name of person to remove: ";
+                std::cin >> firstName;
+
+                std::cout << "Last Name of person to remove: ";
+                std::cin >> lastName;
+
+                directory.removePerson(firstName, lastName);
+
+                std::cout << firstName << " " << lastName
+                          << " removed." << std::endl;
+            }
+
+            else if (command == "exit" || command == "e") {
+                std::cout << "Exiting program." << std::endl;
+                g_stop = true;
+                break;
+            }
+
+            else {
+                std::cout << "Unknown command." << std::endl;
+            }
+        }
+        catch (const std::exception& e) {
+            std::cerr << "Error processing command: "
+                      << e.what() << std::endl;
+
+            std::cin.clear();
+            std::cin.ignore(10000, '\n');
+        }
+    }
 }
 
 void monitorThread(Directory& directory, Config& config) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Person.hpp"
+#include "Socket.hpp"
 #include <vector>
 #include <string>
 #include <iostream>
@@ -10,15 +11,6 @@
 #include <simdjson.h>
 #include <nlohmann/json.hpp>
 #include <exception>
-#ifdef _WIN32
-    #include <winsock2.h>     // socket(), sendto(), sockaddr_in, closesocket
-    #include <ws2tcpip.h>     // inet_pton()
-    #pragma comment(lib, "ws2_32.lib")
-#else
-    #include <sys/socket.h>   // socket(), sendto()
-    #include <arpa/inet.h>    // htons(), inet_pton(), sockaddr_in
-    #include <unistd.h>       // close()
-#endif
 
 #define ENTRIES_KEY "annuaire"
 
@@ -39,7 +31,7 @@ public:
 
 	Directory& operator=(const Directory& other);
 
-	void listPersons() const;
+	void listPersons();
 	void addPerson(const Person& person);
 	void modifyPerson(const std::string& firstName, const std::string& lastName, const Person& updatedPerson);
 	void removePerson(const std::string& firstName, const std::string& lastName);
@@ -52,5 +44,5 @@ public:
 	void loadFromJSON(const std::string& filename);
 	void saveToJSON() const;
 
-	bool sendUDP(const std::string& ip, const int port) const;
+	void sendUDP(const std::string& ip, const int port) const;
 };

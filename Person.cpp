@@ -2,8 +2,8 @@
 
 Person::Person(const std::string& firstName, const std::string& lastName, const int64_t height)
 : firstName(firstName), lastName(lastName), height(height) {
-	if (height < 0) {
-		throw std::invalid_argument("Height cannot be negative");
+	if (height <= 0) {
+		throw std::invalid_argument("Height cannot be zero or negative");
 	}
 }
 
@@ -11,8 +11,8 @@ Person::Person(simdjson::dom::object obj) {
 	firstName = std::string(obj[FIRSTNAME_KEY]);
 	lastName = std::string(obj[LASTNAME_KEY]);
 	height = int64_t(obj[HEIGHT_KEY]);
-	if (height < 0) {
-		throw std::invalid_argument("Height cannot be negative");
+	if (height <= 0) {
+		throw std::invalid_argument("Height cannot be zero or negative");
 	}
 }
 
@@ -51,8 +51,8 @@ void Person::setLastName(const std::string& lastName) {
 }
 
 void Person::setHeight(const int64_t height) {
-	if (height < 0) {
-		throw std::invalid_argument("Height cannot be negative");
+	if (height <= 0) {
+		throw std::invalid_argument("Height cannot be zero or negative");
 	} else {
 	this->height = height;
 	}

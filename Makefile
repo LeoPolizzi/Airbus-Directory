@@ -9,6 +9,7 @@ SRCS =	main.cpp \
 		Directory.cpp \
 		Config.cpp \
 		Person.cpp \
+		Socket.cpp \
 
 OBJS = $(SRCS:.cpp=.o)
 
